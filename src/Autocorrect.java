@@ -1,18 +1,14 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
-/**
- * Autocorrect
- * <p>
- * A command-line tool to suggest similar words when given one not in the dictionary.
- * </p>
- * @author Zach Blick
- * @author Zoe Sun
- */
 public class Autocorrect {
     String[] words;
-    private int threshold;
+    private final int threshold;
+    ArrayList<Pair> lis;
     /**
      * Constucts an instance of the Autocorrect class.
      * @param words The dictionary of acceptable words.
@@ -45,12 +41,24 @@ public class Autocorrect {
      * Runs a test from the tester file, AutocorrectTester.
      * @param typed The (potentially) misspelled word, provided by the user.
      * @return An array of all dictionary words with an edit distance less than or equal
-     * to threshold, sorted by edit distnace, then sorted alphabetically.
+     * to threshold, sorted by edit distance, then sorted alphabetically.
      */
     public String[] runTest(String typed) {
         int n = words.length;
-
-        return new String[0];
+        Arrays.sort(words);
+        for (int i = 0; i < n; i++) {
+            int dist = editDist(typed, words[i]);
+            if (dist < threshold) {
+                Pair x = new Pair(words[i], dist);
+                lis.add(x);
+            }
+        }
+        lis.sort(Comparator.comparingInt(Pair::getDist).thenComparing(Pair::getWord));
+        String[] arr = new String[lis.size()];
+        for (int i = 0; i < lis.size(); i++) {
+            arr[i] = lis.get(i).getWord();
+        }
+        return arr;
     }
 
 
