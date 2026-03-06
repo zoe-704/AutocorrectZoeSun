@@ -8,17 +8,37 @@ import java.io.IOException;
  * A command-line tool to suggest similar words when given one not in the dictionary.
  * </p>
  * @author Zach Blick
- * @author YOUR NAME HERE
+ * @author Zoe Sun
  */
 public class Autocorrect {
-
+    String[] words;
+    private int threshold;
     /**
      * Constucts an instance of the Autocorrect class.
      * @param words The dictionary of acceptable words.
      * @param threshold The maximum number of edits a suggestion can have.
      */
     public Autocorrect(String[] words, int threshold) {
+        this.words = words;
+        this.threshold = threshold;
+    }
 
+    public int editDist(String m, String n) {
+        int m_length = m.length(), n_length = n.length();
+        int[][] dp = new int[m_length+1][n_length+1];
+        // base case
+        for (int i = 0; i <= m_length; i++) dp[i][0] = i;
+        for (int i = 0; i <= n_length; i++) dp[0][i] = i;
+
+        for (int i = 1; i <= m_length; i++) {
+            for (int j = 1; j <= n_length; j++) {
+                // match
+                if (m.charAt(i-1) == n.charAt(j-1)) dp[i][j] = dp[i-1][j-1];
+                // del/insert
+                else dp[i][j] = 1 + Math.min(dp[i-1][j], dp[i][j-1]);
+            }
+        }
+        return dp[m_length][n_length];
     }
 
     /**
@@ -28,6 +48,7 @@ public class Autocorrect {
      * to threshold, sorted by edit distnace, then sorted alphabetically.
      */
     public String[] runTest(String typed) {
+        int n = words.length;
 
         return new String[0];
     }
