@@ -28,10 +28,10 @@ public class Autocorrect {
 
         for (int i = 1; i <= m_length; i++) {
             for (int j = 1; j <= n_length; j++) {
+
                 // match
                 if (m.charAt(i-1) == n.charAt(j-1)) dp[i][j] = dp[i-1][j-1];
-                // del/insert
-                else dp[i][j] = 1 + Math.min(dp[i-1][j], dp[i][j-1]);
+                else dp[i][j] = 1 + Math.min(dp[i-1][j-1], Math.min(dp[i-1][j], dp[i][j-1])); // sub, del, insert
             }
         }
         return dp[m_length][n_length];
@@ -45,10 +45,11 @@ public class Autocorrect {
      */
     public String[] runTest(String typed) {
         int n = words.length;
+        lis = new ArrayList<>();
         Arrays.sort(words);
         for (int i = 0; i < n; i++) {
             int dist = editDist(typed, words[i]);
-            if (dist < threshold) {
+            if (dist <= threshold) {
                 Pair x = new Pair(words[i], dist);
                 lis.add(x);
             }
