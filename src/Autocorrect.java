@@ -18,8 +18,10 @@ public class Autocorrect {
         this.words = words;
         this.threshold = threshold;
     }
-
-    public int editDist(String m, String n) {
+    /**
+     * Calculate edit distance between string m and n
+     */
+    private int editDist(String m, String n) {
         int m_length = m.length(), n_length = n.length();
         int[][] dp = new int[m_length+1][n_length+1];
         // base case
@@ -28,13 +30,27 @@ public class Autocorrect {
 
         for (int i = 1; i <= m_length; i++) {
             for (int j = 1; j <= n_length; j++) {
-
                 // match
                 if (m.charAt(i-1) == n.charAt(j-1)) dp[i][j] = dp[i-1][j-1];
                 else dp[i][j] = 1 + Math.min(dp[i-1][j-1], Math.min(dp[i-1][j], dp[i][j-1])); // sub, del, insert
             }
         }
         return dp[m_length][n_length];
+    }
+
+    // get grams
+    private ArrayList<String> loadGrams (String word) {
+        ArrayList<String> grams = new ArrayList<>();
+        for (int i = 0; i < word.length()-1; i++) {
+            grams.add(word.substring(i, i+2));
+        }
+        return grams;
+    }
+    // check if dictionary words have common grams with word
+    private boolean commonGrams(String word, ArrayList<String> grams) {
+        for (String g : grams)
+            if (word.contains(g)) return true;
+        return false;
     }
 
     /**
@@ -47,13 +63,19 @@ public class Autocorrect {
         int n = words.length;
         lis = new ArrayList<>();
         Arrays.sort(words);
+        ArrayList<String> grams = loadGrams(typed);
+        // DOES NOT PAST TEST CASE #3
         for (int i = 0; i < n; i++) {
+            if (!commonGrams(words[i], grams)) {
+                continue;
+            }
             int dist = editDist(typed, words[i]);
             if (dist <= threshold) {
                 Pair x = new Pair(words[i], dist);
                 lis.add(x);
             }
         }
+        // sort by distance and then alphabetically
         lis.sort(Comparator.comparingInt(Pair::getDist).thenComparing(Pair::getWord));
         String[] arr = new String[lis.size()];
         for (int i = 0; i < lis.size(); i++) {
