@@ -1,14 +1,13 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 
 public class Autocorrect {
     String[] words;
     private final int threshold;
-    ArrayList<Pair> lis;
+    HashMap<String, ArrayList<String>> bigramMap;
+    int gramSize = 2;
     /**
      * Constucts an instance of the Autocorrect class.
      * @param words The dictionary of acceptable words.
@@ -17,6 +16,25 @@ public class Autocorrect {
     public Autocorrect(String[] words, int threshold) {
         this.words = words;
         this.threshold = threshold;
+        Arrays.sort(words); // only sort once
+        bigramMap = new HashMap<>();
+        for (String word : words) {
+            for (int i = 0; i < word.length()-gramSize+1; i++) {
+                String bigram = word.substring(i, i+gramSize);
+                bigramMap.putIfAbsent(bigram, new ArrayList<>());
+                bigramMap.get(bigram).add(word);
+            }
+        }
+    }
+    private HashSet<String> getValid(String typed) {
+        HashSet<String> valid = new HashSet<>();
+        for (int i = 0; i < typed.length()-gramSize+1; i++) {
+            String bigram = typed.substring(i, i+gramSize);
+            if (bigramMap.containsKey(bigram)) {
+                valid.addAll(bigramMap.get(bigram));
+            }
+        }
+        return valid;
     }
     /**
      * Calculate edit distance between string m and n
@@ -38,21 +56,6 @@ public class Autocorrect {
         return dp[m_length][n_length];
     }
 
-    // get grams
-    private ArrayList<String> loadGrams (String word) {
-        ArrayList<String> grams = new ArrayList<>();
-        for (int i = 0; i < word.length()-1; i++) {
-            grams.add(word.substring(i, i+2));
-        }
-        return grams;
-    }
-    // check if dictionary words have common grams with word
-    private boolean commonGrams(String word, ArrayList<String> grams) {
-        for (String g : grams)
-            if (word.contains(g)) return true;
-        return false;
-    }
-
     /**
      * Runs a test from the tester file, AutocorrectTester.
      * @param typed The (potentially) misspelled word, provided by the user.
@@ -60,26 +63,35 @@ public class Autocorrect {
      * to threshold, sorted by edit distance, then sorted alphabetically.
      */
     public String[] runTest(String typed) {
-        int n = words.length;
-        lis = new ArrayList<>();
-        Arrays.sort(words);
-        ArrayList<String> grams = loadGrams(typed);
-        // DOES NOT PAST TEST CASE #3
-        for (int i = 0; i < n; i++) {
-            if (!commonGrams(words[i], grams)) {
-                continue;
-            }
-            int dist = editDist(typed, words[i]);
-            if (dist <= threshold) {
-                Pair x = new Pair(words[i], dist);
-                lis.add(x);
-            }
+        // initialize variables and data structures
+        int t = typed.length();
+        ArrayList<Pair> matches = new ArrayList<>(); // words with an edit distance within threshold
+        HashSet<String> valid = getValid(typed); // words in dictionary that share a bigram with typed words
+        HashSet<String> vis = new HashSet<>();
+
+        // valid (bigram-containing) words
+        for (String word : valid) {
+            vis.add(word);                                          // do not check word again later
+            if (Math.abs(word.length()-t) > threshold) continue;    // word is too long or short within edit distance
+            // check if edit distance is less than threshold for valid words
+            int dist = editDist(typed, word);
+            if (dist <= threshold) matches.add(new Pair(word, dist));
         }
-        // sort by distance and then alphabetically
-        lis.sort(Comparator.comparingInt(Pair::getDist).thenComparing(Pair::getWord));
-        String[] arr = new String[lis.size()];
-        for (int i = 0; i < lis.size(); i++) {
-            arr[i] = lis.get(i).getWord();
+        // all other words
+        for (String word : words) {
+            // skips words that have been checked or too long or short
+            if (vis.contains(word) || Math.abs(word.length()-t) > threshold) continue;
+            // check edit distance and threshold
+            int dist = editDist(typed, word);
+            if (dist <= threshold) matches.add(new Pair(word, dist));
+        }
+
+        // sort by distance first and then alphabetically
+        matches.sort(Comparator.comparingInt(Pair::getDist).thenComparing(Pair::getWord));
+        // convert to array before returning potential matches
+        String[] arr = new String[matches.size()];
+        for (int i = 0; i < matches.size(); i++) {
+            arr[i] = matches.get(i).getWord();
         }
         return arr;
     }
