@@ -7,8 +7,8 @@ public class Autocorrect {
     // declare structures for later use
     private final String[] words;
     private final int threshold;
-    private int gramSize = 2;
-    private Map<String, Set<String>> gramMap;
+    private final int gramSize = 2;
+    private final Map<String, Set<String>> gramMap;
 
     /**
      * Constucts an instance of the Autocorrect class.
@@ -19,44 +19,17 @@ public class Autocorrect {
         this.words = words;
         this.threshold = threshold;
         Arrays.sort(words); // only sort once
-        gramMap = buildGramMap(this.words, 2);
-    }
-    // Autocorrect instance with varying ngram size
-    public Autocorrect(String[] words, int threshold, int gramSize) {
-        this.words = words;
-        this.threshold = threshold;
-        this.gramSize = gramSize;
-        Arrays.sort(words); // only sort once
-        gramMap = buildGramMap(this.words, this.gramSize);
-    }
-
-    // creates set of words with each gram as the index
-    public Map<String, Set<String>> buildGramMap(String[] words, int gramSize) {
-        Map<String, Set<String>> map = new HashMap<>();
+        gramMap = new HashMap<>();
         for (String word : words) {
-            if (word.length() < gramSize) continue;
-            for (int i = 0; i < word.length()-gramSize; i++) {
-                String gram = word.substring(i, i+gramSize);
-                map.putIfAbsent(gram, new HashSet<>());
-                map.get(gram).add(word);
+            for (int i = 0; i < word.length()-gramSize+1; i++) {
+                String bigram = word.substring(i, i+gramSize);
+                gramMap.putIfAbsent(bigram, new HashSet<>());
+                gramMap.get(bigram).add(word);
             }
         }
-        return map;
     }
-
-
-    private Set<String> getValid(String typed) {
-        Set<String> valid = new HashSet<>();
-        // 1. no word
-        if (typed.isEmpty()) {
-            for (String word : words) {
-                if (word.length() <= threshold) {
-                    valid.add(word);
-                }
-            }
-            return valid;
-        }
-        // 2. other
+    private HashSet<String> getValid(String typed) {
+        HashSet<String> valid = new HashSet<>();
         for (int i = 0; i < typed.length()-gramSize+1; i++) {
             String bigram = typed.substring(i, i+gramSize);
             if (gramMap.containsKey(bigram)) {
@@ -96,7 +69,7 @@ public class Autocorrect {
         // initialize variables and data structures
         int t = typed.length();
         ArrayList<Pair> matches = new ArrayList<>(); // words with an edit distance within threshold
-        HashSet<String> valid = (HashSet<String>) getValid(typed); // words in dictionary that share a bigram with typed words
+        HashSet<String> valid = getValid(typed); // words in dictionary that share a bigram with typed words
         HashSet<String> vis = new HashSet<>();
 
         // valid (bigram-containing) words
