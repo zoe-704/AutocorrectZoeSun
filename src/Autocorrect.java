@@ -18,7 +18,8 @@ public class Autocorrect {
     public Autocorrect(String[] words, int threshold) {
         this.words = words;
         this.threshold = threshold;
-        Arrays.sort(words); // only sort once
+        Arrays.sort(words); // only sort alphabetically once
+        // initialize and build bigram index
         gramMap = new HashMap<>();
         for (String word : words) {
             for (int i = 0; i < word.length()-gramSize+1; i++) {
@@ -28,12 +29,15 @@ public class Autocorrect {
             }
         }
     }
+    // returns dictionary words with at least one ngram in common
     private HashSet<String> getValid(String typed) {
         HashSet<String> valid = new HashSet<>();
+        // each bigram in typed word
         for (int i = 0; i < typed.length()-gramSize+1; i++) {
-            String bigram = typed.substring(i, i+gramSize);
-            if (gramMap.containsKey(bigram)) {
-                valid.addAll(gramMap.get(bigram));
+            String gram = typed.substring(i, i+gramSize);
+            // add dictionary words that contain the bigram in dictionary index
+            if (gramMap.containsKey(gram)) {
+                valid.addAll(gramMap.get(gram));
             }
         }
         return valid;
@@ -43,16 +47,20 @@ public class Autocorrect {
      * Calculate edit distance between string m and n
      */
     private int editDist(String m, String n) {
+        // DP table for edit distance and variables
         int m_length = m.length(), n_length = n.length();
         int[][] dp = new int[m_length+1][n_length+1];
+
         // base case
         for (int i = 0; i <= m_length; i++) dp[i][0] = i;
         for (int i = 0; i <= n_length; i++) dp[0][i] = i;
 
+        // fill dp table
         for (int i = 1; i <= m_length; i++) {
             for (int j = 1; j <= n_length; j++) {
-                // match
+                // characters match so no edit
                 if (m.charAt(i-1) == n.charAt(j-1)) dp[i][j] = dp[i-1][j-1];
+                // min(substitution, deletion, insertion)
                 else dp[i][j] = 1 + Math.min(dp[i-1][j-1], Math.min(dp[i-1][j], dp[i][j-1])); // sub, del, insert
             }
         }
